@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Encoding">
+    <file url="file://$PROJECT_DIR$/basic_gx.cc" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/header/basic_gx.h" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/header/modeltolearn.h" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/header/transform.h" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/header/use.h" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/modeltolearn.cc" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/ps_way.cc" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/transform_pic.cc" charset="GBK" />
+  </component>
+</project>
