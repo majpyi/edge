@@ -4908,17 +4908,21 @@ Mat color_sortpixel(const Mat &gray, Mat &color, IplImage *a, int th) {
 //
 //根据邻接的大小点进行八邻域内的所有点的归属划分
 //-----------------------------------------------------------------
-void Near_attribution(const Mat &gray, Mat &vote, Mat & big,Mat & small, int x, int y, Mat &newgray, Mat &newvote ,Mat &newbig ,Mat &newsmall) {
-    int di[8 + 3] = {0,+1, +0, -1, -1, -1, 0, +1, +1, +1, +0};
-    int dj[8 + 3] = {0,+1, +1, +1, 0, -1, -1, -1, +0, +1, +1};
+void Near_attribution(const Mat &gray, Mat &diff, Mat &big, Mat &small, int x, int y, Mat &newgray, Mat &newvote,
+                      Mat &newbig, Mat &newsmall, Mat &newdiff) {
+    int di[8 + 3] = {0, +1, +0, -1, -1, -1, 0, +1, +1, +1, +0};
+    int dj[8 + 3] = {0, +1, +1, +1, 0, -1, -1, -1, +0, +1, +1};
     int rows = gray.rows;
     int cols = gray.cols;
     Mat obj(rows, cols, CV_32F, Scalar(OUTPUT_FALSE));
-    newvote=obj.clone();
-    newvote=obj.clone();
-    newbig=obj.clone();
-    newsmall=obj.clone();
-	for (int i = 1; i < rows - 1; ++i) {
+    newvote = obj.clone();
+    newbig = big.clone();
+    newsmall = small.clone();
+    newdiff = diff.clone();
+    newgray = gray.clone();
+
+
+    for (int i = 1; i < rows - 1; ++i) {
         for (int j = 1; j < cols - 1; ++j) {
             int da_num = 0;
             int xiao_num = 0;
@@ -4942,66 +4946,194 @@ void Near_attribution(const Mat &gray, Mat &vote, Mat & big,Mat & small, int x, 
                 int da = da_sum / da_num;
                 int xiao = xiao_sum / xiao_num;
                 for (int k = 0; k < 9; k++) {
-                    if((big.at<float>(i + di[k], j + dj[k])||small.at<float>(i + di[k], j + dj[k]))==0)
-                    {
+                    if ((big.at<float>(i + di[k], j + dj[k]) == 0 && small.at<float>(i + di[k], j + dj[k])) == 0) {
                         if (abs(gray.at<float>(i + di[k], j + dj[k]) - da) >
                             abs(gray.at<float>(i + di[k], j + dj[k]) - xiao)) {
                             newvote.at<float>(i + di[k], j + dj[k]) = 1;
                             newsmall.at<float>(i + di[k], j + dj[k]) = 1;
+                            if (diff.at<float>(i + di[k], j + dj[k]) == 1) {
+                                newgray.at<float>(i + di[k], j + dj[k]) = xiao;
+                                newdiff.at<float>(i + di[k], j + dj[k]) = 0;
+                            }
                         } else {
                             newvote.at<float>(i + di[k], j + dj[k]) = 222;
                             newbig.at<float>(i + di[k], j + dj[k]) = 1;
+                            if (diff.at<float>(i + di[k], j + dj[k]) == 1) {
+                                newgray.at<float>(i + di[k], j + dj[k]) = da;
+                                newdiff.at<float>(i + di[k], j + dj[k]) = 0;
+                            }
                         }
                     }
 
                 }
-                /*
-                if(verity(newvote,i,j)==0)
-                {
-                    for (int k = 1; k < 9; k++) {
-                        if (big.at<float>(i + di[k], j + dj[k]) == 1)
-                        {
-                            newvote.at<float>(i + di[k], j + dj[k]) = 222;
-                        }
-                        if (small.at<float>(i + di[k], j + dj[k]) == 1)
-                        {
-                            newvote.at<float>(i + di[k], j + dj[k]) = 1;
-                        }
-                        if(vote.at<float>(i + di[k], j + dj[k]) == 0)
-                        {
-                            newvote.at<float>(i + di[k], j + dj[k]) = 0;
-                        } else
-                        {
-                            newvote.at<float>(i + di[k], j + dj[k]) = 3;
-                        }
-                    }
-                }
-                */
+
 
             }
-
 
 
         }
     }
 
+
 }
+
 //----------------------[verify()函数]--------------------
 //
 // 判断修正后的图是不是连续的分区
 //-----------------------------------------------------------------
-int verity(Mat vote,int x,int y)
-{
+int verity(Mat vote, int x, int y) {
     int di[8 + 2] = {+1, +0, -1, -1, -1, 0, +1, +1, +1, +0};
     int dj[8 + 2] = {+1, +1, +1, 0, -1, -1, -1, +0, +1, +1};
     for (int k = 1; k < 9; k++) {
-        if(vote.at<float>(x+di[k],y+dj[k])!=vote.at<float>(x+di[k-1],y+dj[k-1])&&vote.at<float>(x+di[k],y+dj[k])!=vote.at<float>(x+di[k+1],y+dj[k+1]))
-        {
+        if (vote.at<float>(x + di[k], y + dj[k]) != vote.at<float>(x + di[k - 1], y + dj[k - 1]) &&
+            vote.at<float>(x + di[k], y + dj[k]) != vote.at<float>(x + di[k + 1], y + dj[k + 1])) {
             return 0;
         }
     }
     return 1;
 }
+
+void New_Near_attribution(const Mat &gray, Mat &diff, Mat &big, Mat &small, int x, int y, Mat &newgray, Mat &newvote,
+                          Mat &newbig, Mat &newsmall, Mat &newdiff) {
+    int di[8 + 3] = {0, +1, +0, -1, -1, -1, 0, +1, +1, +1, +0};
+    int dj[8 + 3] = {0, +1, +1, +1, 0, -1, -1, -1, +0, +1, +1};
+    int rows = gray.rows;
+    int cols = gray.cols;
+    Mat obj(rows, cols, CV_32F, Scalar(OUTPUT_FALSE));
+    newvote = obj.clone();
+    newbig = big.clone();
+    newsmall = small.clone();
+    newdiff = diff.clone();
+    newgray = gray.clone();
+    for (int i = 1; i < rows - 1; ++i) {
+        for (int j = 1; j < cols - 1; ++j) {
+            int da_num = 0;
+            int xiao_num = 0;
+            int da_sum = 0;
+            int xiao_sum = 0;
+            for (int k = 0; k < 9; k++) {
+                if (big.at<float>(i + di[k], j + dj[k]) == 1) {
+                    da_num++;
+                    da_sum += gray.at<float>(i + di[k], j + dj[k]);
+                    newvote.at<float>(i + di[k], j + dj[k]) = 222;
+                    newbig.at<float>(i + di[k], j + dj[k]) = 1;
+                }
+                if (small.at<float>(i + di[k], j + dj[k]) == 1) {
+                    xiao_num++;
+                    xiao_sum += gray.at<float>(i + di[k], j + dj[k]);
+                    newvote.at<float>(i + di[k], j + dj[k]) = 1;
+                    newsmall.at<float>(i + di[k], j + dj[k]) = 1;
+                }
+            }
+
+            if (da_num && xiao_num) {
+                int da = da_sum / da_num;
+                int xiao = xiao_sum / xiao_num;
+                for (int k = 0; k < 9; k++) {
+                    if ((big.at<float>(i + di[k], j + dj[k]) == 0 && small.at<float>(i + di[k], j + dj[k])) == 0) {
+                        if (abs(gray.at<float>(i + di[k], j + dj[k]) - da) >
+                            abs(gray.at<float>(i + di[k], j + dj[k]) - xiao)) {
+                            newvote.at<float>(i + di[k], j + dj[k]) = 1;
+                            newsmall.at<float>(i + di[k], j + dj[k]) = 1;
+                            e_Near_attribution(i + di[k], j + dj[k], newgray, newvote, newbig, newsmall, newdiff, k);
+                            if (diff.at<float>(i + di[k], j + dj[k]) == 1) {
+                                newgray.at<float>(i + di[k], j + dj[k]) = xiao;
+                                newdiff.at<float>(i + di[k], j + dj[k]) = 0;
+                            }
+                        } else {
+                            newvote.at<float>(i + di[k], j + dj[k]) = 222;
+                            newbig.at<float>(i + di[k], j + dj[k]) = 1;
+                            e_Near_attribution(i + di[k], j + dj[k], newgray, newvote, newbig, newsmall, newdiff, k);
+                            if (diff.at<float>(i + di[k], j + dj[k]) == 1) {
+                                newgray.at<float>(i + di[k], j + dj[k]) = da;
+                                newdiff.at<float>(i + di[k], j + dj[k]) = 0;
+                            }
+                        }
+                    }
+
+                }
+
+            }
+
+
+        }
+    }
+
+}
+
+
+void e_Near_attribution(int x, int y, Mat &newgray, Mat &newvote, Mat &newbig, Mat &newsmall, Mat &newdiff, int p) {
+    int di[8 + 3] = {0, +1, +0, -1, -1, -1, 0, +1, +1, +1, +0};
+    int dj[8 + 3] = {0, +1, +1, +1, 0, -1, -1, -1, +0, +1, +1};
+    int rows = newgray.rows;
+    int cols = newgray.cols;
+    if (x == 0 || y == 0 || x == (newgray.rows - 2) || y == (newgray.cols - 2)) {
+        return;
+    }
+
+    int i = x;
+    int j = y;
+    int da_num = 0;
+    int xiao_num = 0;
+    int da_sum = 0;
+    int xiao_sum = 0;
+    for (int k = 0; k < 9; k++) {
+        if (newbig.at<float>(i + di[k], j + dj[k]) == 1) {
+            da_num++;
+            da_sum += newgray.at<float>(i + di[k], j + dj[k]);
+            newvote.at<float>(i + di[k], j + dj[k]) = 222;
+            newbig.at<float>(i + di[k], j + dj[k]) = 1;
+        }
+        if (newsmall.at<float>(i + di[k], j + dj[k]) == 1) {
+            xiao_num++;
+            xiao_sum += newgray.at<float>(i + di[k], j + dj[k]);
+            newvote.at<float>(i + di[k], j + dj[k]) = 1;
+            newsmall.at<float>(i + di[k], j + dj[k]) = 1;
+        }
+    }
+
+    //	if (da_num && xiao_num && (p==3 || p==4 || p==5 ) ) {
+    if (da_num && xiao_num) {
+//        if (p == 3 || p == 4 || p == 5) {
+            int da = da_sum / da_num;
+            int xiao = xiao_sum / xiao_num;
+            for (int k = 0; k < 9; k++) {
+                if ( newbig.at<float>(i + di[k], j + dj[k]) == 0 && newsmall.at<float>(i + di[k], j + dj[k]) == 0) {
+                    if (abs(newgray.at<float>(i + di[k], j + dj[k]) - da) >
+                        abs(newgray.at<float>(i + di[k], j + dj[k]) - xiao)) {
+                        newvote.at<float>(i + di[k], j + dj[k]) = 1;
+                        newsmall.at<float>(i + di[k], j + dj[k]) = 1;
+                        e_Near_attribution(i + di[k], j + dj[k], newgray, newvote, newbig, newsmall, newdiff, k);
+                        if (newdiff.at<float>(i + di[k], j + dj[k]) == 1) {
+                            newgray.at<float>(i + di[k], j + dj[k]) = xiao;
+                            newdiff.at<float>(i + di[k], j + dj[k]) = 0;
+                        }
+                    } else {
+                        newvote.at<float>(i + di[k], j + dj[k]) = 222;
+                        newbig.at<float>(i + di[k], j + dj[k]) = 1;
+                        e_Near_attribution(i + di[k], j + dj[k], newgray, newvote, newbig, newsmall, newdiff, k);
+                        if (newdiff.at<float>(i + di[k], j + dj[k]) == 1) {
+                            newgray.at<float>(i + di[k], j + dj[k]) = da;
+                            newdiff.at<float>(i + di[k], j + dj[k]) = 0;
+                        }
+                    }
+                }
+                else{
+                    return;
+                }
+            }
+//        }
+
+    }
+    else {
+        return;
+    }
+
+
+}
+
+
+
 
 
 //By majpyi. 2018.3.5

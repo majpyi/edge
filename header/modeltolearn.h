@@ -157,8 +157,11 @@ int judge_single(const Mat & gray, int th, int i, int j);
 int judge_transition(const Mat & gray, int th, int i, int j);
 Mat color_fix7vs1(Mat & src, IplImage * a, Mat &gray);
 Mat color_sortpixel(const Mat & gray, Mat & color, IplImage * a, int th);
-void Near_attribution(const Mat &gray, Mat &vote, Mat & big,Mat & small, int x, int y, Mat &newgray, Mat &newvote,Mat &newbig ,Mat &newsmall);
+void New_Near_attribution(const Mat &gray, Mat &diff, Mat & big, Mat & small, int x, int y, Mat &newgray, Mat &newvote, Mat &newbig, Mat &newsmall, Mat &newdiff);
 int verity(Mat vote,int x,int y);
+
+void New_Near_attribution(const Mat &gray, Mat &diff, Mat & big, Mat & small, int x, int y, Mat &newgray, Mat &newvote, Mat &newbig, Mat &newsmall, Mat &newdiff);
+void e_Near_attribution( int x, int y, Mat &newgray, Mat &newvote, Mat &newbig, Mat &newsmall, Mat &newdiff ,int p);
 
 
 #endif // !TRANSFORM_H_
