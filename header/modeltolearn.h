@@ -102,7 +102,9 @@ bool judeAndFixDiff(const Mat & src, const Mat & votemat, Mat & obj, int i, int 
 Mat voteToFix(const Mat &, const Mat &, Mat &, Mat &, Mat &, int);//修复矛盾点（原灰度图，投票图“findBigSmallArea”的图,大边缘图,小边缘图，矛盾点图,阈值)
 Mat gx_cvt_color(const Mat & gray, int cl);//以BGR三种单色显示,0蓝，1绿，2红
 Mat color3_edge(const Mat & big_edge, const Mat & small_edge, const Mat & diff,int tag = 3);//使用两种颜色表示大小边 大边（红），小边（绿），矛盾点（蓝）
-//ps_way中的函数
+//Mat color3_edge(const Mat &big_edge, const Mat &small_edge, const Mat &diff, int tag, Mat type3);
+
+        //ps_way中的函数
 
 bool to_gray(const Mat & src, Mat & src_Gray);//将图像转化为灰度图
 bool read_src(Mat & src, const string & imgName, int pipe = 0);//读取图像
@@ -129,6 +131,7 @@ Mat find_edgexiao(Mat & votemat);
 Mat mfixDiff(const Mat & src, Mat & votemat, Mat & bigm, Mat & smallm, Mat & diffm, int th);
 int centerFix(const Mat & gray, int maxcha, int x, int y); 
 Mat mfindBigSmallArea(const Mat & gray, int th);
+void test_mfindBigSmallArea(const Mat &gray, int i,int j);
 Mat color2_vote(const Mat & vote);
 
 
@@ -157,12 +160,30 @@ int judge_single(const Mat & gray, int th, int i, int j);
 int judge_transition(const Mat & gray, int th, int i, int j);
 Mat color_fix7vs1(Mat & src, IplImage * a, Mat &gray);
 Mat color_sortpixel(const Mat & gray, Mat & color, IplImage * a, int th);
-void New_Near_attribution(const Mat &gray, Mat &diff, Mat & big, Mat & small, int x, int y, Mat &newgray, Mat &newvote, Mat &newbig, Mat &newsmall, Mat &newdiff);
+void New_Near_attribution(const Mat &gray, Mat &diff, Mat & big, Mat & small, int x, int y, Mat &newgray, Mat &newvote, Mat &newbig, Mat &newsmall, Mat &newdiff,int th);
 int verity(Mat vote,int x,int y);
 
-void New_Near_attribution(const Mat &gray, Mat &diff, Mat & big, Mat & small, int x, int y, Mat &newgray, Mat &newvote, Mat &newbig, Mat &newsmall, Mat &newdiff);
-void e_Near_attribution( int x, int y, Mat &newgray, Mat &newvote, Mat &newbig, Mat &newsmall, Mat &newdiff ,int p);
+void New_Near_attribution(const Mat &gray, Mat &diff, Mat & big, Mat & small, int x, int y, Mat &newgray, Mat &newvote, Mat &newbig, Mat &newsmall, Mat &newdiff,int th);
+void e_Near_attribution( int x, int y, Mat &newgray, Mat &newvote, Mat &newbig, Mat &newsmall, Mat &newdiff ,int p,int th);
+int verity_break(Mat gray, int x, int y,int th);
+//Mat L0g(Mat &gray, Mat &tag);
+//Mat L0g(Mat &gray, Mat &tag,long long sum[],long nums[]);
+Mat L0g(Mat &gray, Mat &tag, long long sum[], long nums[],Mat &color,long long sumb[],long long sumg[],long long sumr[]);
+//Mat L0g(Mat &gray, Mat &tag, long sum[], long nums[],Mat &color,long  sumb[],long sumg[],long sumr[]);
+Mat type3 (const Mat &big_edge, const Mat &small_edge, const Mat &diff);
+Mat smooth_gray(Mat &obj, long long sum[], long nums[],int gray[]) ;
+//Mat smooth_gray(Mat &obj, long sum[], long nums[]) ;
+Mat smooth_color(Mat &obj, long long sumb[],long long sumg[],long long sumr[], long nums[]);
+//Mat smooth_color(Mat &obj, long sumb[],long sumg[],long sumr[], long nums[]);
+
+Mat extend_gray(Mat &obj, int gray[] ,Mat &src,Mat &smooth);
 
 
+Mat Minimum_capacity(Mat &gray, Mat &cha, Mat &bigsmall, Mat &chasum, Mat &Two_areas_min,Mat &re);
+void mc_smooth(Mat &re, Mat &gray, int pos[], int i, int j, int avg_m, int avg_n, Mat &bigsmall, Mat &chasum);
+void test_mc(Mat &re,Mat &gray ,int pos[],int i,int j,int avg_m);
+int two_areas_min(int pos[], Mat &gray, int i, int j);
+Mat mc_judge(Mat &chasum, Mat Two_areas_min);
+Mat mc_edge(Mat &mc_judge);
 #endif // !TRANSFORM_H_
 //By Ma. 2018/1/30

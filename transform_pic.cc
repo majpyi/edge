@@ -201,9 +201,9 @@ Mat model32Edge(const Mat &src, const int *model, int_pr *edge_station,
             bit8 b8;
             for (int k = 0; k < 8; ++k) {
                 if (fabs(src.at<float>(i, j) - src.at<float>(i + di[k], j + dj[k])) <= p) {
-                    b8[k] = 1;//1是内部点
+//                    b8[k] = 1;//1是内部点
                 } else {
-                    b8[k] = 0;//0是边
+//                    b8[k] = 0;//0是边
                 }
             }
             bit8 min_b8 = min_bit8(b8);//保存为36模版之一
@@ -1543,7 +1543,7 @@ Mat gx_cvt_color(const Mat &gray, int cl) {
 }
 
 
-//----------------------[color2_edge()函数]---------------------
+//----------------------[color3_edge()函数]---------------------
 //使用两种颜色表现大小边
 //将灰度颜色转化为某个颜色0,b,1,g,2,r
 //tag 显示几条边 默认 3，显示三条边
@@ -1552,22 +1552,25 @@ Mat color3_edge(const Mat &big_edge, const Mat &small_edge, const Mat &diff, int
     int rows = big_edge.rows;
     int cols = big_edge.cols;
     Mat obj(rows, cols, CV_8UC3, Scalar(255, 255, 255));
+//    Mat obj(rows, cols, CV_32F, Scalar(OUTPUT_FALSE));
     for (int i = 1; i < rows - 1; ++i) {
         for (int j = 1; j < cols - 1; ++j) {
             if (big_edge.at<float>(i, j) == 1) {
+//                type3.at<double>(i, j)=2;
                 obj.at<Vec3b>(i, j)[2] = MAX_PT;
                 //红色，大边
                 obj.at<Vec3b>(i, j)[0] = OUTPUT_FALSE;
                 obj.at<Vec3b>(i, j)[1] = OUTPUT_FALSE;
             }
             if (small_edge.at<float>(i, j) == 1) {
+//                type3.at<double>(i, j)=1;
                 obj.at<Vec3b>(i, j)[1] = MAX_PT;
                 //绿色，小边
                 obj.at<Vec3b>(i, j)[0] = OUTPUT_FALSE;
                 obj.at<Vec3b>(i, j)[2] = OUTPUT_FALSE;
             }
             if (diff.at<float>(i, j) == 1 && tag == 3) {
-
+//                type3.at<double>(i, j)=3;
                 obj.at<Vec3b>(i, j)[0] = MAX_PT;
                 //蓝色,矛盾点
                 obj.at<Vec3b>(i, j)[1] = OUTPUT_FALSE;
@@ -1915,9 +1918,9 @@ int testsortpixel(const Mat &gray, int th, int x, int y) {
     Mat obj(rows, cols, CV_32F, Scalar(OUTPUT_FALSE));//存放排序法进行标记的大小区
     Mat maodun(rows, cols, CV_32F, Scalar(OUTPUT_FALSE));//记录矛盾点（左右的标记点与自身的不一致）
     //单像素区域跳过
-    if (judge_single(gray, 20, i, j) == 1) {
-        return 0;
-    }
+//    if (judge_single(gray, 20, i, j) == 1) {
+//        return 0;
+//    }
 
     //判断是不是内部点，如果是，则进行跳过
     int negative_max, positive_max;
@@ -1939,12 +1942,12 @@ int testsortpixel(const Mat &gray, int th, int x, int y) {
             }
         }
     }
-    int dis_pow = fabs(positive_max) < fabs(negative_max)
-                  ? fabs(positive_max) : fabs(negative_max);
-
-    if (dis_pow < th) {
-        return 0;
-    }
+//    int dis_pow = fabs(positive_max) < fabs(negative_max)
+//                  ? fabs(positive_max) : fabs(negative_max);
+//
+//    if (dis_pow < th) {
+//        return 0;
+//    }
 
     //组成数组进行排序
     for (int k = 0; k <= 7; k++) {
@@ -1995,6 +1998,8 @@ int testsortpixel(const Mat &gray, int th, int x, int y) {
         cout << 1 << "  ";
     }
 
+
+    cout<<endl;
 
 
     //找到被两个大边夹到中心的小边点
@@ -3133,6 +3138,78 @@ Mat mfindBigSmallArea(const Mat &gray, int th) {
 }
 
 
+//----------------------[mfindBigSmallArea()函数]--------------------
+//划分大小区域12.18
+//
+//-----------------------------------------------------------------
+void test_mfindBigSmallArea(const Mat &gray, int i,int j) {
+    int di[8 + 1] = {+0, -1, -1, -1, 0, +1, +1, +1, +0};
+    int dj[8 + 1] = {+1, +1, 0, -1, -1, -1, +0, +1, +1};
+
+            int negative_max, positive_max;
+            negative_max = positive_max = OUTPUT_FALSE;
+            int max_p=0, min_p=0;
+            //max_p是大区域的第一个点，min_p是大区域最后一个点的位置
+            //找最大最小区域
+            for (int k = 1; k <= 8; ++k) {
+                int diff = gray.at<float>(i + di[k], j + dj[k]) - gray.at<float>(i + di[k - 1], j + dj[k - 1]);
+                if (diff <= 0) {
+                    if (diff <= negative_max) {
+                        negative_max = diff;
+                        min_p = k - 1;
+                        //前面是大区域
+                    }
+                } else {
+                    if (diff >= positive_max) {
+                        positive_max = diff;
+                        max_p = k;
+                        //后面是大区域
+                    }
+                }
+            }
+
+
+            //int min = 999;
+            //int locate = -1;
+            int max1 = max_p % 8;    //后面是大区域
+            int max2 = min_p;    //前面是大区域
+            int min1 = (min_p + 1) % 8;  //后面是小区域
+            int min2 = max_p - 1;   //前面是小区域
+
+            cout<<"大区域: "<<endl;
+            if (max1 <= max2) {
+                for (int l = max1; l <= max2; ++l) {
+                    cout<<gray.at<float>(i + di[l], j + dj[l])<<" ";
+                }
+            } else {
+                for (int l = max1; l <= 7; ++l) {
+                    cout<<gray.at<float>(i + di[l], j + dj[l])<<" ";
+                }
+                for (int l = 0; l <= max2; ++l) {
+                    cout<<gray.at<float>(i + di[l], j + dj[l])<<" ";
+                }
+
+            }
+
+            cout<<endl;
+
+            cout<<"小区域: "<<endl;
+            if (min2 >= min1) {
+                for (int l = min1; l <= min2; ++l) {
+                    cout<<gray.at<float>(i + di[l], j + dj[l])<<" ";
+                }
+            } else {
+                for (int l = min1; l <= 7; ++l) {
+                    cout<<gray.at<float>(i + di[l], j + dj[l])<<" ";
+                }
+                for (int l = 0; l <= min2; ++l) {
+                    cout<<gray.at<float>(i + di[l], j + dj[l])<<" ";
+                }
+            }
+
+            cout<<endl;
+}
+
 //----------------------[color2_vote()函数]---------------------
 //使用两种颜色表现投票大小边
 //
@@ -3952,7 +4029,7 @@ int grow(Mat &src, Mat &vote) {
 //color_findBigSmallAre()对彩色图像划分大小区域
 //--------------------------------------------------------------
 int color_diff(CvScalar a, CvScalar b) {
-    int num = abs(a.val[0] - b.val[0]) + abs(a.val[1] - b.val[1]) + abs(a.val[2] - b.val[2]);
+    int num = static_cast<int>(abs(a.val[0] - b.val[0]) + abs(a.val[1] - b.val[1]) + abs(a.val[2] - b.val[2]));
     return num;
 }
 
@@ -3960,7 +4037,7 @@ int color_diff(CvScalar a, CvScalar b) {
 //light()对彩色图像划分大小区域
 //--------------------------------------------------------------
 float light(CvScalar a) {
-    float num = a.val[0] * 0.1 + a.val[1] * 0.6 + a.val[2] * 0.3;
+    float num = static_cast<float>(a.val[0] * 0.1 + a.val[1] * 0.6 + a.val[2] * 0.3);
     return num;
 }
 
@@ -4908,6 +4985,7 @@ Mat color_sortpixel(const Mat &gray, Mat &color, IplImage *a, int th) {
 //
 //根据邻接的大小点进行八邻域内的所有点的归属划分
 //-----------------------------------------------------------------
+
 void Near_attribution(const Mat &gray, Mat &diff, Mat &big, Mat &small, int x, int y, Mat &newgray, Mat &newvote,
                       Mat &newbig, Mat &newsmall, Mat &newdiff) {
     int di[8 + 3] = {0, +1, +0, -1, -1, -1, 0, +1, +1, +1, +0};
@@ -4977,6 +5055,239 @@ void Near_attribution(const Mat &gray, Mat &diff, Mat &big, Mat &small, int x, i
 
 }
 
+
+/*
+if(verity(newvote,i,j)==0)
+{
+for (int k = 1; k < 9; k++) {
+if (big.at<float>(i + di[k], j + dj[k]) == 1)
+{
+newvote.at<float>(i + di[k], j + dj[k]) = 222;
+}
+if (small.at<float>(i + di[k], j + dj[k]) == 1)
+{
+newvote.at<float>(i + di[k], j + dj[k]) = 1;
+}
+if(vote.at<float>(i + di[k], j + dj[k]) == 0)
+{
+newvote.at<float>(i + di[k], j + dj[k]) = 0;
+} else
+{
+newvote.at<float>(i + di[k], j + dj[k]) = 3;
+}
+}
+}
+*/
+
+
+void Near_attribution_3(const Mat &gray, Mat &diff, Mat &big, Mat &small, int x, int y, Mat &newgray, Mat &newvote,
+                        Mat &newbig, Mat &newsmall, Mat &newdiff) {
+    int di[8 + 3] = {0, +1, +0, -1, -1, -1, 0, +1, +1, +1, +0};
+    int dj[8 + 3] = {0, +1, +1, +1, 0, -1, -1, -1, +0, +1, +1};
+    int rows = gray.rows;
+    int cols = gray.cols;
+    Mat obj(rows, cols, CV_32F, Scalar(OUTPUT_FALSE));
+    newvote = obj.clone();
+    newbig = big.clone();
+    newsmall = small.clone();
+    newdiff = diff.clone();
+    newgray = gray.clone();
+
+
+    for (int i = rows - 2; i >= 1; --i) {
+        for (int j = cols - 2; j >= 1; --j) {
+            int da_num = 0;
+            int xiao_num = 0;
+            int da_sum = 0;
+            int xiao_sum = 0;
+            for (int k = 0; k < 9; k++) {
+                if (big.at<float>(i + di[k], j + dj[k]) == 1) {
+                    da_num++;
+                    da_sum += gray.at<float>(i + di[k], j + dj[k]);
+                    newvote.at<float>(i + di[k], j + dj[k]) = 222;
+                    newbig.at<float>(i + di[k], j + dj[k]) = 1;
+                }
+                if (small.at<float>(i + di[k], j + dj[k]) == 1) {
+                    xiao_num++;
+                    xiao_sum += gray.at<float>(i + di[k], j + dj[k]);
+                    newvote.at<float>(i + di[k], j + dj[k]) = 1;
+                    newsmall.at<float>(i + di[k], j + dj[k]) = 1;
+                }
+            }
+            if (da_num && xiao_num) {
+                int da = da_sum / da_num;
+                int xiao = xiao_sum / xiao_num;
+                for (int k = 0; k < 9; k++) {
+                    if ((big.at<float>(i + di[k], j + dj[k]) == 0 && small.at<float>(i + di[k], j + dj[k])) == 0) {
+                        if (abs(gray.at<float>(i + di[k], j + dj[k]) - da) >
+                            abs(gray.at<float>(i + di[k], j + dj[k]) - xiao)) {
+                            newvote.at<float>(i + di[k], j + dj[k]) = 1;
+                            newsmall.at<float>(i + di[k], j + dj[k]) = 1;
+                            if (diff.at<float>(i + di[k], j + dj[k]) == 1) {
+                                newgray.at<float>(i + di[k], j + dj[k]) = xiao;
+                                newdiff.at<float>(i + di[k], j + dj[k]) = 0;
+                            }
+                        } else {
+                            newvote.at<float>(i + di[k], j + dj[k]) = 222;
+                            newbig.at<float>(i + di[k], j + dj[k]) = 1;
+                            if (diff.at<float>(i + di[k], j + dj[k]) == 1) {
+                                newgray.at<float>(i + di[k], j + dj[k]) = da;
+                                newdiff.at<float>(i + di[k], j + dj[k]) = 0;
+                            }
+                        }
+                    }
+
+                }
+
+            }
+
+
+        }
+    }
+
+
+}
+
+
+void Near_attribution_2(const Mat &gray, Mat &diff, Mat &big, Mat &small, int x, int y, Mat &newgray, Mat &newvote,
+                        Mat &newbig, Mat &newsmall, Mat &newdiff) {
+    int di[8 + 3] = {0, +1, +0, -1, -1, -1, 0, +1, +1, +1, +0};
+    int dj[8 + 3] = {0, +1, +1, +1, 0, -1, -1, -1, +0, +1, +1};
+    int rows = gray.rows;
+    int cols = gray.cols;
+    Mat obj(rows, cols, CV_32F, Scalar(OUTPUT_FALSE));
+    newvote = obj.clone();
+    newbig = big.clone();
+    newsmall = small.clone();
+    newdiff = diff.clone();
+    newgray = gray.clone();
+
+
+    for (int i = 1; i < rows - 1; ++i) {
+        for (int j = cols - 2; j >= 1; --j) {
+            int da_num = 0;
+            int xiao_num = 0;
+            int da_sum = 0;
+            int xiao_sum = 0;
+            for (int k = 0; k < 9; k++) {
+                if (big.at<float>(i + di[k], j + dj[k]) == 1) {
+                    da_num++;
+                    da_sum += gray.at<float>(i + di[k], j + dj[k]);
+                    newvote.at<float>(i + di[k], j + dj[k]) = 222;
+                    newbig.at<float>(i + di[k], j + dj[k]) = 1;
+                }
+                if (small.at<float>(i + di[k], j + dj[k]) == 1) {
+                    xiao_num++;
+                    xiao_sum += gray.at<float>(i + di[k], j + dj[k]);
+                    newvote.at<float>(i + di[k], j + dj[k]) = 1;
+                    newsmall.at<float>(i + di[k], j + dj[k]) = 1;
+                }
+            }
+            if (da_num && xiao_num) {
+                int da = da_sum / da_num;
+                int xiao = xiao_sum / xiao_num;
+                for (int k = 0; k < 9; k++) {
+                    if ((big.at<float>(i + di[k], j + dj[k]) == 0 && small.at<float>(i + di[k], j + dj[k])) == 0) {
+                        if (abs(gray.at<float>(i + di[k], j + dj[k]) - da) >
+                            abs(gray.at<float>(i + di[k], j + dj[k]) - xiao)) {
+                            newvote.at<float>(i + di[k], j + dj[k]) = 1;
+                            newsmall.at<float>(i + di[k], j + dj[k]) = 1;
+                            if (diff.at<float>(i + di[k], j + dj[k]) == 1) {
+                                newgray.at<float>(i + di[k], j + dj[k]) = xiao;
+                                newdiff.at<float>(i + di[k], j + dj[k]) = 0;
+                            }
+                        } else {
+                            newvote.at<float>(i + di[k], j + dj[k]) = 222;
+                            newbig.at<float>(i + di[k], j + dj[k]) = 1;
+                            if (diff.at<float>(i + di[k], j + dj[k]) == 1) {
+                                newgray.at<float>(i + di[k], j + dj[k]) = da;
+                                newdiff.at<float>(i + di[k], j + dj[k]) = 0;
+                            }
+                        }
+                    }
+
+                }
+
+
+            }
+
+
+        }
+    }
+
+
+}
+
+
+void Near_attribution_1(const Mat &gray, Mat &diff, Mat &big, Mat &small, int x, int y, Mat &newgray, Mat &newvote,
+                        Mat &newbig, Mat &newsmall, Mat &newdiff) {
+    int di[8 + 3] = {0, +1, +0, -1, -1, -1, 0, +1, +1, +1, +0};
+    int dj[8 + 3] = {0, +1, +1, +1, 0, -1, -1, -1, +0, +1, +1};
+    int rows = gray.rows;
+    int cols = gray.cols;
+    Mat obj(rows, cols, CV_32F, Scalar(OUTPUT_FALSE));
+    newvote = obj.clone();
+    newbig = big.clone();
+    newsmall = small.clone();
+    newdiff = diff.clone();
+    newgray = gray.clone();
+
+
+    for (int i = rows - 2; i >= 1; --i) {
+        for (int j = 1; j < cols - 1; ++j) {
+            int da_num = 0;
+            int xiao_num = 0;
+            int da_sum = 0;
+            int xiao_sum = 0;
+            for (int k = 0; k < 9; k++) {
+                if (big.at<float>(i + di[k], j + dj[k]) == 1) {
+                    da_num++;
+                    da_sum += gray.at<float>(i + di[k], j + dj[k]);
+                    newvote.at<float>(i + di[k], j + dj[k]) = 222;
+                    newbig.at<float>(i + di[k], j + dj[k]) = 1;
+                }
+                if (small.at<float>(i + di[k], j + dj[k]) == 1) {
+                    xiao_num++;
+                    xiao_sum += gray.at<float>(i + di[k], j + dj[k]);
+                    newvote.at<float>(i + di[k], j + dj[k]) = 1;
+                    newsmall.at<float>(i + di[k], j + dj[k]) = 1;
+                }
+            }
+            if (da_num && xiao_num) {
+                int da = da_sum / da_num;
+                int xiao = xiao_sum / xiao_num;
+                for (int k = 0; k < 9; k++) {
+                    if ((big.at<float>(i + di[k], j + dj[k]) == 0 && small.at<float>(i + di[k], j + dj[k])) == 0) {
+                        if (abs(gray.at<float>(i + di[k], j + dj[k]) - da) >
+                            abs(gray.at<float>(i + di[k], j + dj[k]) - xiao)) {
+                            newvote.at<float>(i + di[k], j + dj[k]) = 1;
+                            newsmall.at<float>(i + di[k], j + dj[k]) = 1;
+                            if (diff.at<float>(i + di[k], j + dj[k]) == 1) {
+                                newgray.at<float>(i + di[k], j + dj[k]) = xiao;
+                                newdiff.at<float>(i + di[k], j + dj[k]) = 0;
+                            }
+                        } else {
+                            newvote.at<float>(i + di[k], j + dj[k]) = 222;
+                            newbig.at<float>(i + di[k], j + dj[k]) = 1;
+                            if (diff.at<float>(i + di[k], j + dj[k]) == 1) {
+                                newgray.at<float>(i + di[k], j + dj[k]) = da;
+                                newdiff.at<float>(i + di[k], j + dj[k]) = 0;
+                            }
+                        }
+                    }
+
+                }
+
+            }
+
+
+        }
+    }
+
+
+}
+
+
 //----------------------[verify()函数]--------------------
 //
 // 判断修正后的图是不是连续的分区
@@ -4993,8 +5304,49 @@ int verity(Mat vote, int x, int y) {
     return 1;
 }
 
+//----------------------[verify()函数]--------------------
+//
+// 判断如果是内部区域则停止生长
+//1.   区域内的色差较小
+//2.  区域中的像素点分布没有规律，比较混乱
+//-----------------------------------------------------------------
+int verity_break(Mat gray, int x, int y, int th) {
+    int di[8 + 2] = {+1, +0, -1, -1, -1, 0, +1, +1, +1, +0};
+    int dj[8 + 2] = {+1, +1, +1, 0, -1, -1, -1, +0, +1, +1};
+    int negative_max, positive_max;
+    negative_max = OUTPUT_FALSE;
+    positive_max = OUTPUT_FALSE;
+    int max_p, min_p;
+    for (int k = 1; k <= 8; ++k) {
+        int diff = static_cast<int>(gray.at<float>(x, y) -
+                                    gray.at<float>(x, y));
+        if (diff < 0) {
+            if (diff < negative_max) {
+                negative_max = diff;
+                min_p = k - 1;
+            }
+        } else {
+            if (diff > positive_max) {
+                positive_max = diff;
+                max_p = k;
+            }
+        }
+    }
+    int dis_pow = static_cast<int>(fabs(positive_max) < fabs(negative_max)
+                                   ? fabs(positive_max) : fabs(negative_max));
+
+    if (dis_pow < th) {
+        return 1;
+    }
+}
+//----------------------[New_Near_attribution()函数]--------------------
+//
+// 每次得到起始点，就开始向所有四周改变的点延伸
+//-----------------------------------------------------------------
+
+
 void New_Near_attribution(const Mat &gray, Mat &diff, Mat &big, Mat &small, int x, int y, Mat &newgray, Mat &newvote,
-                          Mat &newbig, Mat &newsmall, Mat &newdiff) {
+                          Mat &newbig, Mat &newsmall, Mat &newdiff, int th) {
     int di[8 + 3] = {0, +1, +0, -1, -1, -1, 0, +1, +1, +1, +0};
     int dj[8 + 3] = {0, +1, +1, +1, 0, -1, -1, -1, +0, +1, +1};
     int rows = gray.rows;
@@ -5030,22 +5382,24 @@ void New_Near_attribution(const Mat &gray, Mat &diff, Mat &big, Mat &small, int 
                 int da = da_sum / da_num;
                 int xiao = xiao_sum / xiao_num;
                 for (int k = 0; k < 9; k++) {
-                    if ((big.at<float>(i + di[k], j + dj[k]) == 0 && small.at<float>(i + di[k], j + dj[k])) == 0) {
+                    if (big.at<float>(i + di[k], j + dj[k]) == 0 && small.at<float>(i + di[k], j + dj[k]) == 0) {
                         if (abs(gray.at<float>(i + di[k], j + dj[k]) - da) >
                             abs(gray.at<float>(i + di[k], j + dj[k]) - xiao)) {
                             newvote.at<float>(i + di[k], j + dj[k]) = 1;
                             newsmall.at<float>(i + di[k], j + dj[k]) = 1;
-                            e_Near_attribution(i + di[k], j + dj[k], newgray, newvote, newbig, newsmall, newdiff, k);
+                            e_Near_attribution(i + di[k], j + dj[k], newgray, newvote, newbig, newsmall, newdiff, k,
+                                               th);
                             if (diff.at<float>(i + di[k], j + dj[k]) == 1) {
-                                newgray.at<float>(i + di[k], j + dj[k]) = xiao;
+                                //                                newgray.at<float>(i + di[k], j + dj[k]) = xiao;
                                 newdiff.at<float>(i + di[k], j + dj[k]) = 0;
                             }
                         } else {
                             newvote.at<float>(i + di[k], j + dj[k]) = 222;
                             newbig.at<float>(i + di[k], j + dj[k]) = 1;
-                            e_Near_attribution(i + di[k], j + dj[k], newgray, newvote, newbig, newsmall, newdiff, k);
+                            e_Near_attribution(i + di[k], j + dj[k], newgray, newvote, newbig, newsmall, newdiff, k,
+                                               th);
                             if (diff.at<float>(i + di[k], j + dj[k]) == 1) {
-                                newgray.at<float>(i + di[k], j + dj[k]) = da;
+                                //                                newgray.at<float>(i + di[k], j + dj[k]) = da;
                                 newdiff.at<float>(i + di[k], j + dj[k]) = 0;
                             }
                         }
@@ -5062,12 +5416,17 @@ void New_Near_attribution(const Mat &gray, Mat &diff, Mat &big, Mat &small, int 
 }
 
 
-void e_Near_attribution(int x, int y, Mat &newgray, Mat &newvote, Mat &newbig, Mat &newsmall, Mat &newdiff, int p) {
+void
+e_Near_attribution(int x, int y, Mat &newgray, Mat &newvote, Mat &newbig, Mat &newsmall, Mat &newdiff, int p, int th) {
     int di[8 + 3] = {0, +1, +0, -1, -1, -1, 0, +1, +1, +1, +0};
     int dj[8 + 3] = {0, +1, +1, +1, 0, -1, -1, -1, +0, +1, +1};
     int rows = newgray.rows;
     int cols = newgray.cols;
     if (x == 0 || y == 0 || x == (newgray.rows - 2) || y == (newgray.cols - 2)) {
+        return;
+    }
+
+    if (verity_break(newgray, x, y, th) == 1) {
         return;
     }
 
@@ -5094,46 +5453,820 @@ void e_Near_attribution(int x, int y, Mat &newgray, Mat &newvote, Mat &newbig, M
 
     //	if (da_num && xiao_num && (p==3 || p==4 || p==5 ) ) {
     if (da_num && xiao_num) {
-//        if (p == 3 || p == 4 || p == 5) {
-            int da = da_sum / da_num;
-            int xiao = xiao_sum / xiao_num;
-            for (int k = 0; k < 9; k++) {
-                if ( newbig.at<float>(i + di[k], j + dj[k]) == 0 && newsmall.at<float>(i + di[k], j + dj[k]) == 0) {
-                    if (abs(newgray.at<float>(i + di[k], j + dj[k]) - da) >
-                        abs(newgray.at<float>(i + di[k], j + dj[k]) - xiao)) {
-                        newvote.at<float>(i + di[k], j + dj[k]) = 1;
-                        newsmall.at<float>(i + di[k], j + dj[k]) = 1;
-                        e_Near_attribution(i + di[k], j + dj[k], newgray, newvote, newbig, newsmall, newdiff, k);
-                        if (newdiff.at<float>(i + di[k], j + dj[k]) == 1) {
-                            newgray.at<float>(i + di[k], j + dj[k]) = xiao;
-                            newdiff.at<float>(i + di[k], j + dj[k]) = 0;
-                        }
-                    } else {
-                        newvote.at<float>(i + di[k], j + dj[k]) = 222;
-                        newbig.at<float>(i + di[k], j + dj[k]) = 1;
-                        e_Near_attribution(i + di[k], j + dj[k], newgray, newvote, newbig, newsmall, newdiff, k);
-                        if (newdiff.at<float>(i + di[k], j + dj[k]) == 1) {
-                            newgray.at<float>(i + di[k], j + dj[k]) = da;
-                            newdiff.at<float>(i + di[k], j + dj[k]) = 0;
+        //        if (p == 3 || p == 4 || p == 5) {
+        int da = da_sum / da_num;
+        int xiao = xiao_sum / xiao_num;
+        for (int k = 0; k < 9; k++) {
+            if (newbig.at<float>(i + di[k], j + dj[k]) == 0 && newsmall.at<float>(i + di[k], j + dj[k]) == 0) {
+                if (abs(newgray.at<float>(i + di[k], j + dj[k]) - da) >
+                    abs(newgray.at<float>(i + di[k], j + dj[k]) - xiao)) {
+                    newvote.at<float>(i + di[k], j + dj[k]) = 1;
+                    newsmall.at<float>(i + di[k], j + dj[k]) = 1;
+                    e_Near_attribution(i + di[k], j + dj[k], newgray, newvote, newbig, newsmall, newdiff, k, th);
+                    if (newdiff.at<float>(i + di[k], j + dj[k]) == 1) {
+                        //                            newgray.at<float>(i + di[k], j + dj[k]) = xiao;
+                        newdiff.at<float>(i + di[k], j + dj[k]) = 0;
+                    }
+                } else {
+                    newvote.at<float>(i + di[k], j + dj[k]) = 222;
+                    newbig.at<float>(i + di[k], j + dj[k]) = 1;
+                    e_Near_attribution(i + di[k], j + dj[k], newgray, newvote, newbig, newsmall, newdiff, k, th);
+                    if (newdiff.at<float>(i + di[k], j + dj[k]) == 1) {
+                        //                            newgray.at<float>(i + di[k], j + dj[k]) = da;
+                        newdiff.at<float>(i + di[k], j + dj[k]) = 0;
+                    }
+                }
+            } else {
+                continue;
+            }
+            //                else{
+            //                    return;
+            //                }
+        }
+        //        }
+
+    } else {
+        return;
+    }
+}
+
+
+//----------------------[L0g()函数]--------------------
+//
+//  按照L0g算子的计算进行改写
+//-----------------------------------------------------------------
+struct Point1 {
+    int x;
+    int y;
+};
+
+Mat L0g(Mat &gray, Mat &tag, long long sum[], long nums[], Mat &color, long long sumb[], long long sumg[],
+        long long sumr[]) {
+//Mat L0g(Mat &gray, Mat &tag, long sum[], long nums[],Mat &color,long  sumb[],long sumg[],long sumr[]) {
+    int rows = gray.rows;
+    int cols = gray.cols;
+    int num = 4;
+    Mat obj(rows, cols, CV_32F, Scalar(OUTPUT_FALSE));
+//    long long sum[1000]={0};
+//    long nums[1000]={0};
+    obj = tag.clone();
+//    int di[8 + 3] = {0, +1, +0, -1, -1, -1, 0, +1, +1, +1, +0};
+//    int dj[8 + 3] = {0, +1, +1, +1, 0, -1, -1, -1, +0, +1, +1};
+    int di[9] = {0, +1, -1, -1, +1, +1, -1, 0, 0};
+    int dj[9] = {0, +1, -1, +1, -1, 0, 0, +1, -1};
+
+    for (int i = 1; i < rows - 1; ++i) {
+        for (int j = 1; j < cols - 1; ++j) {
+
+
+            queue<Point1> qu;
+
+            if (obj.at<float>(i, j) == 0) {
+                Point1 a = {i, j};
+                qu.push(a);
+                obj.at<float>(i, j) = num;
+                nums[num]++;
+                sum[num] += (int) gray.at<float>(i, j);
+                sumb[num] += (int) color.at<Vec3b>(i, j)[0];
+                sumg[num] += (int) color.at<Vec3b>(i, j)[1];
+                sumr[num] += (int) color.at<Vec3b>(i, j)[2];
+                while (!qu.empty()) {
+                    a = qu.front();
+//                    obj.at<float>(a.x,a.y) = num;
+                    qu.pop();
+                    for (int k = 0; k < 9; k++) {
+                        if (obj.at<float>(a.x + di[k], a.y + dj[k]) == 0) {
+//                            tag.at<float>(i + di[k], j + dj[k]) =num;
+                            obj.at<float>(a.x + di[k], a.y + dj[k]) = num;
+                            nums[num]++;
+                            sum[num] += (int) gray.at<float>(a.x + di[k], a.y + dj[k]);
+                            sumb[num] += (int) color.at<Vec3b>(a.x + di[k], a.y + dj[k])[0];
+                            sumg[num] += (int) color.at<Vec3b>(a.x + di[k], a.y + dj[k])[1];
+                            sumr[num] += (int) color.at<Vec3b>(a.x + di[k], a.y + dj[k])[2];
+                            a = {a.x + di[k], a.y + dj[k]};
+                            qu.push(a);
                         }
                     }
                 }
-                else{
-                    return;
-                }
+
+                num++;
+
             }
-//        }
+
+
+        }
+    }
+
+
+    return obj;
+}
+
+//----------------------[type3()函数]--------------------
+//
+//  type3把大小矛盾点分别进行记录
+//-----------------------------------------------------------------
+Mat type3(const Mat &big_edge, const Mat &small_edge, const Mat &diff) {
+    int rows = big_edge.rows;
+    int cols = big_edge.cols;
+    Mat type3result(rows, cols, CV_32F, Scalar(OUTPUT_FALSE));
+    for (int i = 1; i < rows - 1; ++i) {
+        for (int j = 1; j < cols - 1; ++j) {
+            if (big_edge.at<float>(i, j) == 1) {
+                type3result.at<float>(i, j) = 2;
+            }
+            if (small_edge.at<float>(i, j) == 1) {
+                type3result.at<float>(i, j) = 1;
+            }
+            if (diff.at<float>(i, j) == 1) {
+                type3result.at<float>(i, j) = 3;
+            }
+        }
+    }
+    return type3result;
+}
+
+//----------------------[smooth_gary()函数]--------------------
+//
+//  smooth_gray把大小矛盾点分别进行记录
+//  obj 是进行标记的数据其中 0代表内部点,1代表小边点,2代表大边点,3代表矛盾点
+//  sum 各区域灰度值的总和
+//  nums 各区域像素点的总个数
+//  gray 存储计算后的个区域像素点的平局值
+//-----------------------------------------------------------------
+Mat smooth_gray(Mat &obj, long long sum[], long nums[], int gray[]) {
+//Mat smooth_gray(Mat &obj, long sum[], long nums[]) {
+    int rows = obj.rows;
+    int cols = obj.cols;
+//    long gray[1000];
+    for (int i = 4; i < 1000; i++) {
+        gray[i] = 255;
+        if (nums[i] != 0)
+            gray[i] = sum[i] / nums[i];
+    }
+    Mat re(rows, cols, CV_32F, Scalar(OUTPUT_FALSE));
+    for (int i = 1; i < rows - 1; ++i) {
+        for (int j = 1; j < cols - 1; ++j) {
+            if (obj.at<float>(i, j) > 3)
+                re.at<float>(i, j) = gray[(int) obj.at<float>(i, j)];
+        }
+    }
+    return re;
+
+}
+
+//----------------------[smooth_color()函数]--------------------
+//
+//  smooth_color把大小矛盾点分别进行记录
+//-----------------------------------------------------------------
+Mat smooth_color(Mat &obj, long long sumb[], long long sumg[], long long sumr[], long nums[]) {
+//Mat smooth_color(Mat &obj, long sumb[],long sumg[],long sumr[], long nums[]) {
+    int rows = obj.rows;
+    int cols = obj.cols;
+    long b[1000];
+    long g[1000];
+    long r[1000];
+    Mat color(rows, cols, CV_8UC3, Scalar(255, 255, 255));
+    for (int i = 4; i < 1000; i++) {
+        b[i] = 255;
+        g[i] = 255;
+        r[i] = 255;
+        if (nums[i] != 0) {
+            b[i] = sumb[i] / nums[i];
+            g[i] = sumg[i] / nums[i];
+            r[i] = sumr[i] / nums[i];
+        }
 
     }
-    else {
+//    Mat re(rows, cols, CV_32F, Scalar(OUTPUT_FALSE));
+    for (int i = 1; i < rows - 1; ++i) {
+        for (int j = 1; j < cols - 1; ++j) {
+            if (obj.at<float>(i, j) > 3)
+//            re.at<float>(i, j)=gray[(int)obj.at<float>(i, j)];
+            {
+                color.at<Vec3b>(i, j)[0] = b[(int) obj.at<float>(i, j)];
+                color.at<Vec3b>(i, j)[1] = g[(int) obj.at<float>(i, j)];
+                color.at<Vec3b>(i, j)[2] = r[(int) obj.at<float>(i, j)];
+            }
+
+        }
+    }
+    return color;
+
+}
+
+//----------------------[extend_gray()函数]--------------------
+//
+//  extend_gray把大小矛盾点分别进行记录
+//  obj 各区域的分布
+//  gray 各区域值的评价灰度值
+//-----------------------------------------------------------------
+Mat extend_gray(Mat &obj, int gray[], Mat &src, Mat &smooth) {
+    int rows = obj.rows;
+    int cols = obj.cols;
+    Mat re_gray(rows, cols, CV_32F, Scalar(OUTPUT_FALSE));
+    re_gray = smooth.clone();
+    int di[9] = {0, +1, -1, -1, +1, +1, -1, 0, 0};
+    int dj[9] = {0, +1, -1, +1, -1, 0, 0, +1, -1};
+    for (int i = 1; i < rows - 1; ++i) {
+        for (int j = 1; j < cols - 1; ++j) {
+            if (obj.at<float>(i, j) <= 3) {
+                int num = 0;
+                int pos[8] = {0};
+                for (int k = 1; k <= 8; k++) {
+                    if (obj.at<float>(i + di[k], j + dj[k]) > 3) {
+                        pos[num] = (int) obj.at<float>(i + di[k], j + dj[k]);
+                        num++;
+                    }
+                }
+                if (num == 1) {
+                    re_gray.at<float>(i, j) = gray[pos[0]];
+                    obj.at<float>(i, j) = pos[0];
+                } else {
+                    int min = 255;
+                    int tag = 0;
+                    for (int m = 0; m < num; m++) {
+                        if (abs(gray[pos[m]] - src.at<float>(i, j)) < min) {
+                            min = abs(gray[pos[m]] - (int) src.at<float>(i, j));
+                            tag = pos[m];
+                        }
+                    }
+                    re_gray.at<float>(i, j) = gray[tag];
+                    obj.at<float>(i, j) = tag;
+                }
+            }
+        }
+    }
+
+    return re_gray;
+}
+
+
+//   寻找能量值最小函数
+Mat Minimum_capacity(Mat &gray, Mat &cha, Mat &bigsmall, Mat &chasum, Mat &two_areas_min_r,Mat &re) {
+
+    int rows = gray.rows;
+    int cols = gray.cols;
+    Mat re_gray(rows, cols, CV_32F, Scalar(OUTPUT_FALSE));
+    cha = re_gray.clone();
+    bigsmall = re_gray.clone();
+    chasum = re_gray.clone();
+    two_areas_min_r = re_gray.clone();
+    re = re_gray.clone();
+    int di[8 + 8 + 8] = {+1, +0, -1, -1, -1, 0, +1, +1, +1, +0, -1, -1, -1, 0, +1, +1, +1, +0, -1, -1, -1, 0, +1, +1};
+    int dj[8 + 8 + 8] = {+1, +1, +1, 0, -1, -1, -1, +0, +1, +1, +1, 0, -1, -1, -1, +0, +1, +1, +1, 0, -1, -1, -1, +0};
+
+    int times = 1;
+
+    int max_cha=0;
+    int min_cha=0;
+
+
+
+//    int p_cha[8];
+//    int q_cha[8];
+
+
+    for (int i = 1; i < rows - 1; ++i) {
+        for (int j = 1; j < cols - 1; ++j) {
+
+
+            int tag = 0;
+
+            int cha1=0;// 第一部分差值
+            int cha2=0;// 第二部分差值
+
+            int p_cha[8];
+            int q_cha[8];
+
+            int min = 2147483647;
+            int sum = 0;
+            int avg_m = 0;
+            int avg_n = 0;
+
+            int max1=0;
+            int min1=0;
+            int max2=0;
+            int min2=0;
+
+            for (int k = 1; k <= 8; k++) {
+                sum += gray.at<float>(i + di[k], j + dj[k]);
+            }
+
+
+            int pos[5] = {-1, -1, -1, -1, -1};
+
+            // 0 vs 8
+            for (int k = 1; k <= 8; k++) {
+                int avg = sum / 8;
+                int re = 0;
+                for (int m = 0; m <= 7; m++) {
+                    re += (gray.at<float>(i + di[m], j + dj[m]) - avg) * (gray.at<float>(i + di[m], j + dj[m]) - avg);
+                }
+
+                if (min > re) {
+                    min = re;
+                    avg_m = avg;
+                    avg_n = avg;
+
+                    max1=avg;
+                    min1=avg;
+                    max2=avg;
+                    min2=avg;
+                    tag =0;
+                }
+
+            }
+
+            //1vs7
+            for (int k = 1; k <= 8; k++) {
+                int avg = (sum - (int) gray.at<float>(i + di[k], j + dj[k])) / 7;
+                p_cha[0] = (int) gray.at<float>(i + di[k], j + dj[k]);
+                int re = 0;
+                int index=0;
+                for (int m = 0; m <= 7; m++) {
+                    if (m == k%8) continue;
+                    re += (gray.at<float>(i + di[m], j + dj[m]) - avg) * (gray.at<float>(i + di[m], j + dj[m]) - avg);
+                    q_cha[index++]=gray.at<float>(i + di[m], j + dj[m]);
+                }
+
+                if (min > re) {
+                    min = re;
+                    pos[0] = k % 8;
+                    avg_m = avg;
+                    avg_n = p_cha[0];
+                    cha1 = p_cha[0];
+                    sort(q_cha,q_cha+7);
+                    cha2=q_cha[6]-q_cha[0];
+
+                    max1=p_cha[0];
+                    min1=p_cha[0];
+                    max2=q_cha[6];
+                    min2=q_cha[0];
+                    tag =1;
+                }
+            }
+
+            //2vs6
+            for (int k = 1; k <= 8; k++) {
+                int a1 = (int) gray.at<float>(i + di[k], j + dj[k]);
+                p_cha[0] = (int) gray.at<float>(i + di[k], j + dj[k]);
+                int a2 = (int) gray.at<float>(i + di[k + 1], j + dj[k + 1]);
+                p_cha[1] = (int) gray.at<float>(i + di[k + 1], j + dj[k + 1]);
+
+                int avg1 = (a1 + a2) / 2;
+
+                int avg = (sum - a1 - a2) / 6;
+                int re = 0;
+                int index=0;
+                for (int m = 0; m <= 7; m++) {
+                    if (m == k%8 || m == (k + 1) % 8) {
+                        re += (gray.at<float>(i + di[m], j + dj[m]) - avg1) *
+                              (gray.at<float>(i + di[m], j + dj[m]) - avg1);
+                    } else{
+                        re += (gray.at<float>(i + di[m], j + dj[m]) - avg) *
+                              (gray.at<float>(i + di[m], j + dj[m]) - avg);
+                        q_cha[index++]=gray.at<float>(i + di[m], j + dj[m]);
+                    }
+                }
+
+                if (min > re) {
+                    min = re;
+                    pos[0] = k % 8;
+                    pos[1] = (k + 1) % 8;
+                    avg_m = avg;
+                    avg_n = avg1;
+                    sort(p_cha,p_cha+2);
+                    cha1=p_cha[1]-p_cha[0];
+                    sort(q_cha,q_cha+6);
+                    cha2=q_cha[5]-q_cha[0];
+
+                    max1=p_cha[1];
+                    min1=p_cha[0];
+                    max2=q_cha[5];
+                    min2=q_cha[0];
+                    tag =2;
+                }
+            }
+
+
+            //3vs5
+
+            for (int k = 1; k <= 8; k++) {
+                int a1 = (int) gray.at<float>(i + di[k], j + dj[k]);
+                p_cha[0] = (int) gray.at<float>(i + di[k], j + dj[k]);
+
+                int a2 = (int) gray.at<float>(i + di[k + 1], j + dj[k + 1]);
+                p_cha[1] = (int) gray.at<float>(i + di[k+1], j + dj[k+1]);
+
+                int a3 = (int) gray.at<float>(i + di[k + 2], j + dj[k + 2]);
+                p_cha[2] = (int) gray.at<float>(i + di[k+2], j + dj[k+2]);
+
+
+                int avg1 = (a1 + a2 + a3) / 3;
+                int avg = (sum - a1 - a2 - a3) / 5;
+                int re = 0;
+                int index=0;
+                for (int m = 0; m <= 7; m++) {
+                    if (m == k%8 || m == (k + 1) % 8 || m == (k + 2) % 8) {
+                        re += (gray.at<float>(i + di[m], j + dj[m]) - avg1) *
+                              (gray.at<float>(i + di[m], j + dj[m]) - avg1);
+
+                    } else{
+                        re += (gray.at<float>(i + di[m], j + dj[m]) - avg) *
+                              (gray.at<float>(i + di[m], j + dj[m]) - avg);
+                        q_cha[index++]=gray.at<float>(i + di[m], j + dj[m]);
+                    }
+                }
+
+                if (min > re) {
+                    min = re;
+                    pos[0] = k % 8;
+                    pos[1] = (k + 1) % 8;
+                    pos[2] = (k + 2) % 8;
+                    avg_m = avg;
+                    avg_n = avg1;
+                    sort(p_cha,p_cha+3);
+                    cha1=p_cha[2]-p_cha[0];
+                    sort(q_cha,q_cha+5);
+                    cha2=q_cha[4]-q_cha[0];
+
+                    max1=p_cha[2];
+                    min1=p_cha[0];
+                    max2=q_cha[4];
+                    min2=q_cha[0];
+                    tag =3;
+                }
+            }
+            //4vs4
+
+            for (int k = 1; k <= 8; k++) {
+                int a1 = (int) gray.at<float>(i + di[k], j + dj[k]);
+                p_cha[0] = (int) gray.at<float>(i + di[k], j + dj[k]);
+
+                int a2 = (int) gray.at<float>(i + di[k + 1], j + dj[k + 1]);
+                p_cha[1] = (int) gray.at<float>(i + di[k+1], j + dj[k+1]);
+
+                int a3 = (int) gray.at<float>(i + di[k + 2], j + dj[k + 2]);
+                p_cha[2] = (int) gray.at<float>(i + di[k+2], j + dj[k+2]);
+
+                int a4 = (int) gray.at<float>(i + di[k + 3], j + dj[k + 3]);
+                p_cha[3] = (int) gray.at<float>(i + di[k+3], j + dj[k+3]);
+
+                int avg1 = (a1 + a2 + a3 + a4) / 4;
+                int avg = (sum - a1 - a2 - a3 - a4) / 4;
+                int re = 0;
+                int index=0;
+                for (int m = 0; m <= 7; m++) {
+                    if (m == k%8 || m == (k + 1) % 8 || m == (k + 2) % 8 || m == (k + 3) % 8) {
+                        re += (gray.at<float>(i + di[m], j + dj[m]) - avg1) *
+                              (gray.at<float>(i + di[m], j + dj[m]) - avg1);
+
+                    } else{
+                        re += (gray.at<float>(i + di[m], j + dj[m]) - avg) *
+                              (gray.at<float>(i + di[m], j + dj[m]) - avg);
+                        q_cha[index++]=gray.at<float>(i + di[m], j + dj[m]);
+                    }
+                }
+
+                if (min > re) {
+//                    p_cha[0] = (int) gray.at<float>(i + di[k], j + dj[k]);
+//                    p_cha[1] = (int) gray.at<float>(i + di[k+1], j + dj[k+1]);
+//                    p_cha[2] = (int) gray.at<float>(i + di[k+2], j + dj[k+2]);
+//                    p_cha[3] = (int) gray.at<float>(i + di[k+3], j + dj[k+3]);
+
+                    min = re;
+                    pos[0] = k % 8;
+                    pos[1] = (k + 1) % 8;
+                    pos[2] = (k + 2) % 8;
+                    pos[3] = (k + 3) % 8;
+                    avg_m = avg;
+                    avg_n = avg1;
+                    sort(p_cha,p_cha+4);
+                    cha1=p_cha[3]-p_cha[0];
+                    sort(q_cha,q_cha+4);
+                    cha2=q_cha[3]-q_cha[0];
+
+                    max1=p_cha[3];
+                    min1=p_cha[0];
+                    max2=q_cha[3];
+                    min2=q_cha[0];
+                    tag =4;
+                }
+            }
+
+            mc_smooth(re_gray, gray, pos, i, j, avg_m, avg_n, bigsmall, chasum);
+
+
+//                 if (i == 51 && j == 58) {
+                 if (i == 33 && j == 58) {
+                     test_mc(re_gray, gray, pos, i, j, avg_m);
+                     times++;
+//                     for(int p=0;p<tag;p++){
+//                         cout<<p_cha[p]<<" ";
+//                     }
+//                     cout<<endl;
+                     cout << "八邻域区域平均灰度值: " << sum / 8 << endl<<endl;
+                     cout << "第一部分最大差值: " << cha1 << endl;
+                     cout << "第一部分最大值: " << max1 << endl;
+                     cout << "第一部分最小值: " << min1 << endl;
+
+                     cout << endl;
+
+//                     for(int p=0;p<8-tag;p++){
+//                         cout<<q_cha[p]<<" ";
+//                     }
+//
+//                     cout<<endl;
+                     cout << "第二部分最大差值: " << cha2 << endl;
+                     cout << "第二部分最大值: " << max2 << endl;
+                     cout << "第二部分最小值: " << min2 << endl;
+//                     cout << "两个区域的平均值差值: " << abs(avg_m - avg_n) << endl;
+
+                     cout<<endl;
+                     cout<<"排序法的结果"<< endl;
+                     testsortpixel(gray, 1, i, j);
+                     cout<<endl;
+                     cout<<"最大正负方法的结果"<< endl;
+                     test_mfindBigSmallArea(gray,i,j);
+                     cout<<endl;
+                 }
+
+
+
+            two_areas_min_r.at<float>(i, j) = two_areas_min(pos, gray, i, j);
+
+            if(cha1>cha2){
+                max_cha=cha1;
+                min_cha =cha2;
+            }
+            else {
+                max_cha =cha2;
+                min_cha = cha1;
+            }
+
+
+
+
+            int cha_jun=abs(avg_m - avg_n);
+            cha.at<float>(i, j) = cha_jun;
+//            if(cha_jun>1.2*max_cha){
+            if(avg_m>avg_n+10||avg_n<avg_m-10){
+                re.at<float>(i, j)=255;
+            }
+
+
+
+        }
+    }
+
+    return re_gray;
+
+}
+
+//  找到最小能量值之后划分为两个区域,分别进行均值处理
+void mc_smooth(Mat &re, Mat &gray, int pos[], int i, int j, int avg_m, int avg_n, Mat &bigsmall, Mat &chasum) {
+    int di[8 + 2] = {+1, +0, -1, -1, -1, 0, +1, +1, +1, +0};
+    int dj[8 + 2] = {+1, +1, +1, 0, -1, -1, -1, +0, +1, +1};
+    int sum = 0;
+    int num = 0;
+    int avg = 0;
+    int tag_m = 1;
+    int tag_n = 1;
+    if (avg_m > avg_n) {
+        tag_m = 2;
+    } else tag_n = 2;
+
+    if (pos[0] == -1) {
+        for (int k = 0; k < 8; k++) {
+            re.at<float>(i + di[k], j + dj[k]) = avg_m;
+            chasum.at<float>(i + di[k], j + dj[k]) += abs(avg_m - gray.at<float>(i + di[k], j + dj[k]));
+            bigsmall.at<float>(i + di[k], j + dj[k]) = 0;
+        }
         return;
+    }
+
+    for (int k = 0; k < 8; k++) {
+        re.at<float>(i + di[k], j + dj[k]) = avg_m;
+        chasum.at<float>(i + di[k], j + dj[k]) += abs(avg_m - gray.at<float>(i + di[k], j + dj[k]));
+        bigsmall.at<float>(i + di[k], j + dj[k]) = tag_m;
+    }
+
+//    for (int k = 0; k < 5; k++) {
+//        if (pos[k] != -1) {
+//            sum += gray.at<float>(i + di[pos[k]], j + dj[pos[k]]);
+//            num++;
+//        }
+//    }
+
+//    avg = sum / num;
+
+    for (int k = 0; k < 5; k++) {
+        if (pos[k] != -1) {
+            re.at<float>(i + di[pos[k]], j + dj[pos[k]]) = avg;
+            chasum.at<float>(i + di[pos[k]], j + dj[pos[k]]) += abs(
+                    avg_n - gray.at<float>(i + di[pos[k]], j + dj[pos[k]]));
+            chasum.at<float>(i + di[pos[k]], j + dj[pos[k]]) -= abs(
+                    avg_m - gray.at<float>(i + di[pos[k]], j + dj[pos[k]]));
+            bigsmall.at<float>(i + di[k], j + dj[k]) = tag_n;
+        }
+    }
+
+    if (pos[0] != -1 && pos[1] == -1) {
+        for (int k = 0; k < 8; k++) {
+            bigsmall.at<float>(i + di[k], j + dj[k]) = 0;
+        }
     }
 
 
 }
 
 
+//  找到最小能量值之后划分为两个区域,分别进行均值处理
+void test_mc_smooth(Mat &re, Mat &gray, int pos[], int i, int j, int avg_m, int avg_n, Mat &bigsmall, Mat &chasum) {
+    int di[8 + 2] = {+1, +0, -1, -1, -1, 0, +1, +1, +1, +0};
+    int dj[8 + 2] = {+1, +1, +1, 0, -1, -1, -1, +0, +1, +1};
 
 
+    if (pos[0] == -1) {
+        for (int k = 0; k < 8; k++) {
+            chasum.at<float>(i + di[k], j + dj[k]) += abs(avg_m - gray.at<float>(i + di[k], j + dj[k]));
+        }
+        return;
+    }
+
+    for (int k = 0; k < 8; k++) {
+        chasum.at<float>(i + di[k], j + dj[k]) += abs(avg_m - gray.at<float>(i + di[k], j + dj[k]));
+    }
+
+    for (int k = 0; k < 5; k++) {
+        if (pos[k] != -1) {
+            chasum.at<float>(i + di[pos[k]], j + dj[pos[k]]) += abs(
+                    avg_n - gray.at<float>(i + di[pos[k]], j + dj[pos[k]]));
+            chasum.at<float>(i + di[pos[k]], j + dj[pos[k]]) -= abs(
+                    avg_m - gray.at<float>(i + di[pos[k]], j + dj[pos[k]]));
+        }
+    }
+
+
+}
+
+
+//  测试函数只是为了输出结果
+void test_mc(Mat &re, Mat &gray, int pos[], int i, int j, int avg_m) {
+    int di[8 + 2] = {+1, +0, -1, -1, -1, 0, +1, +1, +1, +0};
+    int dj[8 + 2] = {+1, +1, +1, 0, -1, -1, -1, +0, +1, +1};
+    int sum = 0;
+    int num = 0;
+    int avg = 0;
+
+    cout << "原始区域部分的像素点情况 :  " << endl;
+    for (int k = 0; k < 8; k++) {
+        re.at<float>(i + di[k], j + dj[k]) = avg_m;
+        cout << gray.at<float>(i + di[k], j + dj[k]) << " ";
+    }
+
+    for (int k = 0; k < 5; k++) {
+        if (pos[k] != -1) {
+            sum += gray.at<float>(i + di[pos[k]], j + dj[pos[k]]);
+            num++;
+        }
+    }
+
+    if(num==0){
+        cout<<endl<<"所有像素点相同,同一区域"<< endl;
+        return;
+    }
+
+    avg = sum / num;
+    cout<<endl;
+    for (int k = 0; k < 5; k++) {
+        if (pos[k] != -1) {
+            re.at<float>(i + di[pos[k]], j + dj[pos[k]]) = avg;
+            cout << pos[k] << " : " << gray.at<float>(i + di[pos[k]], j + dj[pos[k]]) << endl;
+        }
+    }
+
+    cout << endl << "这一部分的均值:  " << avg;
+    cout << endl << "剩下部分的均值:  " << avg_m << endl;
+
+    cout << "两区域的差值:  " << abs(avg_m - avg) << endl;
+    cout << endl;
+
+}
+
+//  判断是否是边缘点
+Mat mc_judge(Mat &chasum, Mat Two_areas_min) {
+    int rows = chasum.rows;
+    int cols = chasum.cols;
+    int di[8 + 2] = {+1, +0, -1, -1, -1, 0, +1, +1, +1, +0};
+    int dj[8 + 2] = {+1, +1, +1, 0, -1, -1, -1, +0, +1, +1};
+    Mat re(rows, cols, CV_32F, Scalar(OUTPUT_FALSE));
+
+    for (int i = 1; i < rows - 1; ++i) {
+        for (int j = 1; j < cols - 1; ++j) {
+            int max = (int) chasum.at<float>(i + di[0], j + dj[0]);
+
+            for (int k = 1; k < 8; k++) {
+                if (max < chasum.at<float>(i + di[k], j + dj[k]))
+                    max = (int) chasum.at<float>(i + di[k], j + dj[k]);
+            }
+
+            if (max/8  < Two_areas_min.at<float>(i, j)) {
+                re.at<float>(i, j) = 1;
+            }
+
+        }
+    }
+
+    return re;
+}
+
+//  新的判断是否是边缘点
+//Mat mc_judge1(int cha1,int cha2,int chajun) {
+//    int rows = chasum.rows;
+//    int cols = chasum.cols;
+//    int di[8 + 2] = {+1, +0, -1, -1, -1, 0, +1, +1, +1, +0};
+//    int dj[8 + 2] = {+1, +1, +1, 0, -1, -1, -1, +0, +1, +1};
+//    Mat re(rows, cols, CV_32F, Scalar(OUTPUT_FALSE));
+//
+//    for (int i = 1; i < rows - 1; ++i) {
+//        for (int j = 1; j < cols - 1; ++j) {
+//            int max = (int) chasum.at<float>(i + di[0], j + dj[0]);
+//
+//            for (int k = 1; k < 8; k++) {
+//                if (max < chasum.at<float>(i + di[k], j + dj[k]))
+//                    max = (int) chasum.at<float>(i + di[k], j + dj[k]);
+//            }
+//
+//            if (max/8  < Two_areas_min.at<float>(i, j)) {
+//                re.at<float>(i, j) = 1;
+//            }
+//
+//        }
+//    }
+//
+//    return re;
+//}
+
+// 两块区域的最小差值
+int two_areas_min(int pos[], Mat &gray, int i, int j) {
+    int di[8 + 2] = {+1, +0, -1, -1, -1, 0, +1, +1, +1, +0};
+    int dj[8 + 2] = {+1, +1, +1, 0, -1, -1, -1, +0, +1, +1};
+    int are[] = {-2, -2, -2, -2, -2};
+    int index = 0;
+    for (int k = 0; k < 5; k++) {
+        if (pos[k] != -1) {
+            are[index] = pos[k];
+            index++;
+        }
+    }
+
+    if (pos[0] == -1)
+        return 0;
+
+    int num1[index];
+    int num2[8 - index];
+
+    int index1 = 0;
+    int index2 = 0;
+    sort(are, are + index);
+    for (int k = 0; k < 8; k++) {
+        if (are[index1] == k) {
+            num1[index1] = (int) gray.at<float>(i + di[k], j + dj[k]);
+            index1++;
+        } else {
+            num2[index2] = (int) gray.at<float>(i + di[k], j + dj[k]);
+            index2++;
+        }
+    }
+
+    int min = 256;
+    for (int m = 0; m < index1; m++) {
+        for (int n = 0; n < index2; n++) {
+            if (abs(num1[m] - num2[n]) < min) {
+                min = abs(num1[m] - num2[n]);
+            }
+        }
+    }
+
+
+    return min;
+
+}
+
+//   画出边缘点,边缘点显示黑色
+Mat mc_edge(Mat &mc_judge) {
+    int rows = mc_judge.rows;
+    int cols = mc_judge.cols;
+    Mat re(rows, cols, CV_32F, Scalar(OUTPUT_FALSE));
+
+    for (int i = 1; i < rows - 1; ++i) {
+        for (int j = 1; j < cols - 1; ++j) {
+            if(mc_judge.at<float>(i,j)==0)
+                re.at<float>(i,j)=255;
+        }
+    }
+    return re;
+}
 
 //By majpyi. 2018.3.5

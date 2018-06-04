@@ -63,12 +63,63 @@ Mat FindFriendEdge(const string &pic_name) {
     output_arr_csv(g_srcGray, "/Users/Quantum/Nut/edge/out/原图.csv");
     src_to_bmp(g_srcGray, "/Users/Quantum/Nut/edge/out/g_srcGray.jpg");
     //show_src(g_srcGray/255, "原图");
-    int threhold = 30;//阈值
+    int threhold = 15;//阈值
+
+/*
+    //  首先进行平滑处理
+    //   调用高斯和双边平滑函数
+	Mat out_g;
+//	bilateralFilter(g_srcGray, out_g, 50, 50 * 2, 50 / 2);
+	GaussianBlur(g_srcGray, out_g, Size(5, 5), 0, 0);
+	g_srcGray = out_g.clone();
+*/
+
+
+
+
+
+    Mat cha;
+    Mat bigsmall;
+    Mat chasum;
+    Mat two_areas_min_r;
+    Mat re;
+    Mat min =Minimum_capacity(g_srcGray,cha,bigsmall,chasum,two_areas_min_r,re);
+    output_arr_csv(min, "/Users/Quantum/Nut/edge/out/min.csv");
+    output_arr_csv(bigsmall, "/Users/Quantum/Nut/edge/out/bigsmall.csv");
+    output_arr_csv(cha, "/Users/Quantum/Nut/edge/out/cha.csv");
+    output_arr_csv(chasum, "/Users/Quantum/Nut/edge/out/chasum.csv");
+    output_arr_csv(two_areas_min_r, "/Users/Quantum/Nut/edge/out/two_areas_min_r.csv");
+    output_arr_csv(re, "/Users/Quantum/Nut/edge/out/re.csv");
+    src_to_bmp(min, "/Users/Quantum/Nut/edge/out/min.jpg");
+    src_to_bmp(re, "/Users/Quantum/Nut/edge/out/re.jpg");
+
+    Mat mc_edge_csv = mc_judge(chasum, two_areas_min_r);
+    output_arr_csv(mc_edge_csv, "/Users/Quantum/Nut/edge/out/mc_edge.csv");
+
+    Mat mc_edge_pic = mc_edge(mc_edge_csv);
+    src_to_bmp(mc_edge_pic, "/Users/Quantum/Nut/edge/out/mc_edge_pic.jpg");
+
+    /*
+    Mat min1 =Minimum_capacity(min);
+    output_arr_csv(min1, "/Users/Quantum/Nut/edge/out/min1.csv");
+    src_to_bmp(min1, "/Users/Quantum/Nut/edge/out/min1.jpg");
+    Mat min2 =Minimum_capacity(min1);
+    output_arr_csv(min2, "/Users/Quantum/Nut/edge/out/min2.csv");
+    src_to_bmp(min2, "/Users/Quantum/Nut/edge/out/min2.jpg");
+    Mat min3 =Minimum_capacity(min2);
+    output_arr_csv(min3, "/Users/Quantum/Nut/edge/out/min3.csv");
+    src_to_bmp(min3, "/Users/Quantum/Nut/edge/out/min3.jpg");
+    Mat min4 =Minimum_capacity(min3);
+    output_arr_csv(min4, "/Users/Quantum/Nut/edge/out/min4.csv");
+    src_to_bmp(min4, "/Users/Quantum/Nut/edge/out/min4.jpg");
+    */
+
+
 
 /*
 	//彩色图像处理
-	Mat color_pic=imread("/Users/Quantum/Nut/edge/out/4.jpg", CV_LOAD_IMAGE_COLOR);
-	IplImage* img = cvLoadImage("/Users/Quantum/Nut/edge/out/4.jpg", 1);
+//	Mat color_pic=imread("/Users/Quantum/Nut/edge/inout/4.jpg", CV_LOAD_IMAGE_COLOR);
+	IplImage* img = cvLoadImage("/Users/Quantum/Nut/edge/input/4.jpg", 1);
 
 
 	Mat cfix7vs1 = color_fix7vs1(g_srcGray,img, color_pic);
@@ -313,6 +364,7 @@ src_to_bmp(edge3color, "/Users/Quantum/Nut/edge/out/3色边缘图.jpg");
 
 
 
+/*   第一次进行处理
 //   我的方法处理
     //进行投票，分别记录属于最大、最小区域的次数
     Mat BigArea, SmallArea, diff_m;
@@ -330,6 +382,8 @@ src_to_bmp(edge3color, "/Users/Quantum/Nut/edge/out/3色边缘图.jpg");
     //修正之后的投票图
     //Mat fixvote_mat = mfindBigSmallArea(fix_src, threhold);
 //	output_arr_csv(fixvote_mat, "/Users/Quantum/Nut/edge/out/修正后投票图.csv");
+*/
+
 
 
 /*
@@ -349,7 +403,7 @@ src_to_bmp(edge3color, "/Users/Quantum/Nut/edge/out/3色边缘图.jpg");
 	src_to_bmp(fix_src, "/Users/Quantum/Nut/edge/out/fix_src.jpg");
 	*/
 
-
+/*
     //迭代的过程
     //调用我自己的修正的方法进行处理的结果
     Mat newBigArea, newSmallArea, newdiff_m;
@@ -375,6 +429,17 @@ src_to_bmp(edge3color, "/Users/Quantum/Nut/edge/out/3色边缘图.jpg");
     Mat newbs_mat5 = voteBigSmall(newvote_mat5);
     Mat newfix_src5 = mfixDiff(newfix_src4, newvote_mat5, newBigArea5, newSmallArea5, newdiff_m5, threhold);
     Mat newedge3color5 = color3_edge(newBigArea5, newSmallArea5, newdiff_m5);
+*/
+
+/*
+    Mat result3 = type3(newBigArea5, newSmallArea5, newdiff_m5);
+    output_arr_csv(result3, "/Users/Quantum/Nut/edge/out/result3.csv");
+    output_arr_csv(newBigArea5, "/Users/Quantum/Nut/edge/out/newBigArea5.csv");
+    output_arr_csv(newSmallArea5, "/Users/Quantum/Nut/edge/out/newSmallArea5.csv");
+    output_arr_csv(newdiff_m5 ,"/Users/Quantum/Nut/edge/out/newdiff_m5.csv");
+*/
+
+
 
     //output_arr_csv(newfix_src4, "/Users/Quantum/Nut/edge/out/修正后结果.csv");
 
@@ -429,8 +494,7 @@ src_to_bmp(edge3color, "/Users/Quantum/Nut/edge/out/3色边缘图.jpg");
     src_to_bmp(both_edge2, "/Users/Quantum/Nut/edge/out/最终both_edge2.jpg");
     */
 
-
-
+/*     有用的
     Mat both_edge = find_edgeboth(bs_mat);
     //show_src(both_edge, "both_edge");
     src_to_bmp(both_edge, "/Users/Quantum/Nut/edge/out/最终both_edge.jpg");
@@ -447,13 +511,15 @@ src_to_bmp(edge3color, "/Users/Quantum/Nut/edge/out/3色边缘图.jpg");
     Mat both_edge25 = find_edgeboth2(newbs_mat5);
     //show_src(both_edge2, "both_edge2");
     src_to_bmp(both_edge25, "/Users/Quantum/Nut/edge/out/最终both_edge25.jpg");
-
+*/
 
     //src_to_bmp(fix_src, "/Users/Quantum/Nut/edge/out/newfix_src5.jpg");
 
     //Histogramdaxiao(g_srcGray,tag);
     //histm();
 
+
+ /*    其他边缘识别算法
     //canny算子的效果展示
     Mat canny = CannyEdge(pic_name);
     src_to_bmp(canny, "/Users/Quantum/Nut/edge/out/canny.jpg");
@@ -463,7 +529,7 @@ src_to_bmp(edge3color, "/Users/Quantum/Nut/edge/out/3色边缘图.jpg");
     src_to_bmp(Lap, "/Users/Quantum/Nut/edge/out/Laplacian.jpg");
     Mat Sch = ScharEdge(pic_name);
     src_to_bmp(Sch, "/Users/Quantum/Nut/edge/out/Schare.jpg");
-
+*/
 
     /*
     Mat tag = tagdaxiao(newbs_mat5);
@@ -477,6 +543,8 @@ src_to_bmp(edge3color, "/Users/Quantum/Nut/edge/out/3色边缘图.jpg");
     output_arr_csv(tag, "/Users/Quantum/Nut/edge/out/tag1111.csv");
     */
 
+    
+
 
     //Histogram(g_srcGray);
     // 映射算法
@@ -486,6 +554,7 @@ src_to_bmp(edge3color, "/Users/Quantum/Nut/edge/out/3色边缘图.jpg");
     output_arr_csv(mpic, "/Users/Quantum/Nut/edge/out/mpic.csv");
     */
 
+    /*
 
     //   附近归属
     Mat newgray;
@@ -493,42 +562,55 @@ src_to_bmp(edge3color, "/Users/Quantum/Nut/edge/out/3色边缘图.jpg");
     Mat newbig;
     Mat newsmall;
     Mat newdiff;
-    //  Near_attribution(g_srcGray,diff_m, BigArea, SmallArea, 1, 1, newgray, na_vote, newbig, newsmall,newdiff);
-
+    int check = 3;
     New_Near_attribution(newfix_src5, newdiff_m5, newBigArea5, newSmallArea5, 0, 0, newgray, na_vote, newbig, newsmall,
-                         newdiff);
-    output_arr_csv(na_vote, "/Users/Quantum/Nut/edge/out/na_vote.csv");
+        newdiff, check);
+//    output_arr_csv(newfix_src5, "/Users/Quantum/Nut/edge/out/newfix_src5.csv");
+//    output_arr_csv(na_vote, "/Users/Quantum/Nut/edge/out/na_vote.csv");
     Mat na_both_edge = find_edgeboth2(na_vote);
     src_to_bmp(na_both_edge, "/Users/Quantum/Nut/edge/out/na_vote.jpg");
 
+    Mat newgray1;
+    Mat na_vote1;
+    Mat newbig1;
+    Mat newsmall1;
+    Mat newdiff1;
+    New_Near_attribution(newgray, newdiff, newbig, newsmall, 0, 0, newgray1, na_vote1, newbig1, newsmall1,
+                         newdiff1, check);
+    Mat na_both_edge1 = find_edgeboth2(na_vote1);
+    src_to_bmp(na_both_edge1, "/Users/Quantum/Nut/edge/out/na_vote1.jpg");
 
 
 
+    Mat color_pic=imread("/Users/Quantum/Nut/edge/input/4.jpg", CV_LOAD_IMAGE_COLOR);
+//    src_to_bmp(color_pic, "/Users/Quantum/Nut/edge/out/color_pic.jpg");
+    long long sum[1000]={0};
+//    long sum[1000]={0};
+    long long sumb[1000]={0};
+    long long sumg[1000]={0};
+    long long sumr[1000]={0};
+//    long  sumb[1000]={0};
+//    long  sumg[1000]={0};
+//    long  sumr[1000]={0};
+    long nums[1000]={0};
+    int gray[1000]={0};
 
+    Mat L0g_result = L0g(newfix_src5,result3,sum,nums,color_pic,sumb,sumg,sumr);
+    output_arr_csv(L0g_result, "/Users/Quantum/Nut/edge/out/L0g_result.csv");
+    Mat smooth = smooth_gray(L0g_result, sum, nums,gray) ;
+    src_to_bmp(smooth, "/Users/Quantum/Nut/edge/out/smooth.jpg");
+    Mat smooth_c = smooth_color(L0g_result,sumb,sumg,sumr,nums);
+    src_to_bmp(smooth_c, "/Users/Quantum/Nut/edge/out/smooth_c.jpg");
 
-/*
-    Mat newgray2;
-    Mat na_vote2;
-    Mat newbig2;
-    Mat newsmall2;
-    Mat newdiff2;
-    New_Near_attribution(newgray, na_vote, newbig, newsmall, 0, 0, newgray2, na_vote2, newbig2, newsmall2,newdiff2);
-    output_arr_csv(na_vote2, "/Users/Quantum/Nut/edge/out/na_vote2.csv");	
-    Mat na_both_edge2 = find_edgeboth2(na_vote2);
-    src_to_bmp(na_both_edge2, "/Users/Quantum/Nut/edge/out/na_vote2.jpg");
-*/
+    Mat extend_g_pic = extend_gray(L0g_result, gray ,newfix_src5,smooth);
+    src_to_bmp(extend_g_pic, "/Users/Quantum/Nut/edge/out/extend_g_pic.jpg");
+//    Mat extend_g_pic_2 = extend_gray(L0g_result, gray ,newfix_src5,extend_g_pic);
+//    src_to_bmp(extend_g_pic, "/Users/Quantum/Nut/edge/out/extend_g_pic_2.jpg");
+
+     */
+
     /*
-    Mat newgray3;
-    Mat na_vote3;
-    Mat newbig3;
-    Mat newsmall3;
-    Near_attribution(g_srcGray, na_vote2, newbig2, newsmall2, 1, 1, newgray3, na_vote3, newbig3, newsmall3);
-    output_arr_csv(na_vote3, "/Users/Quantum/Nut/edge/out/na_vote3.csv");
-    Mat na_both_edge3 = find_edgeboth2(na_vote3);
-    src_to_bmp(na_both_edge3, "/Users/Quantum/Nut/edge/out/na_vote3.jpg");
-*/
-
-
+    Mat ngray[10];
     Mat nna_vote[10];
     nna_vote[1] = na_vote;
     Mat nbig[10];
@@ -540,7 +622,7 @@ src_to_bmp(edge3color, "/Users/Quantum/Nut/edge/out/3色边缘图.jpg");
     nnewdiff[1] = newdiff;
     Mat tu[10];
     tu[1] = newgray;
-
+     /*
 
     /*
      for (int i = 2; i < 3; i++)
@@ -549,13 +631,13 @@ src_to_bmp(edge3color, "/Users/Quantum/Nut/edge/out/3色边缘图.jpg");
          Near_attribution_1(tu[i], nnewdiff[i], nbig[i], nsmall[i], 1, 1, tu[i + 1], nna_vote[i + 1], nbig[i + 1], nsmall[i + 1], nnewdiff[i + 1]);
          Near_attribution_2(tu[i + 1], nnewdiff[i + 1], nbig[i + 1], nsmall[i + 1], 1, 1, tu[i + 2], nna_vote[i + 2], nbig[i + 2], nsmall[i + 2], nnewdiff[i + 2]);
          Near_attribution_3(tu[i + 2], nnewdiff[i + 2], nbig[i + 2], nsmall[i + 2], 1, 1, tu[i + 3], nna_vote[i + 3], nbig[i + 3], nsmall[i + 3], nnewdiff[i + 3]);
-        
+
          string po1 = "/Users/Quantum/Nut/edge/out/edge//nna_vote" + std::to_string(i) + ".csv";
          //  output_arr_csv(nna_vote[i], po1);
          n_both_edge[i] = find_edgeboth2(nna_vote[i]);
          string po2 = "/Users/Quantum/Nut/edge/out/edge//nna_vote" + std::to_string(i) + ".jpg";
          src_to_bmp(n_both_edge[i], po2);
-       
+
          string po1 = "/Users/Quantum/Nut/edge/out/edge//nna_vote" + std::to_string(i + 3) + ".csv";
          //  output_arr_csv(nna_vote[i], po1);
          n_both_edge[i + 3] = find_edgeboth2(nna_vote[i + 3]);
@@ -564,24 +646,23 @@ src_to_bmp(edge3color, "/Users/Quantum/Nut/edge/out/3色边缘图.jpg");
      }
     */
 
+    /*
+  for (int i = 2; i < 10; i++)
+    {
+        New_Near_attribution(tu[i - 1], nnewdiff[i - 1], nbig[i - 1], nsmall[i - 1], 1, 1, tu[i], nna_vote[i], nbig[i], nsmall[i], nnewdiff[i]);
+  //	  Near_attribution_1(tu[i ], nnewdiff[i ], nbig[i ], nsmall[i ], 1, 1, tu[i+1], nna_vote[i+1], nbig[i+1], nsmall[i+1], nnewdiff[i+1]);
+  //	  Near_attribution_2(tu[i + 1], nnewdiff[i + 1], nbig[i + 1], nsmall[i + 1], 1, 1, tu[i+2], nna_vote[i+2], nbig[i+2], nsmall[i+2], nnewdiff[i+2]);
+  //	  Near_attribution_3(tu[i +2], nnewdiff[i +2], nbig[i +2], nsmall[i +2], 1, 1, tu[i+3], nna_vote[i+3], nbig[i+3], nsmall[i+3], nnewdiff[i+3]);
 
-	for (int i = 2; i < 10; i++)
-	  {
-		  New_Near_attribution(tu[i - 1], nnewdiff[i - 1], nbig[i - 1], nsmall[i - 1], 0, 0, tu[i], nna_vote[i], nbig[i], nsmall[i], nnewdiff[i]);
-	//	  Near_attribution_1(tu[i ], nnewdiff[i ], nbig[i ], nsmall[i ], 1, 1, tu[i+1], nna_vote[i+1], nbig[i+1], nsmall[i+1], nnewdiff[i+1]);
-	//	  Near_attribution_2(tu[i + 1], nnewdiff[i + 1], nbig[i + 1], nsmall[i + 1], 1, 1, tu[i+2], nna_vote[i+2], nbig[i+2], nsmall[i+2], nnewdiff[i+2]);
-	//	  Near_attribution_3(tu[i +2], nnewdiff[i +2], nbig[i +2], nsmall[i +2], 1, 1, tu[i+3], nna_vote[i+3], nbig[i+3], nsmall[i+3], nnewdiff[i+3]);
-		
-		  string po1 = "/Users/Quantum/Nut/edge/out/nna_vote" + std::to_string(i) + ".csv";
-		//  output_arr_csv(nna_vote[i], po1);
-		  n_both_edge[i] = find_edgeboth2(nna_vote[i]);
-		  string po2 = "/Users/Quantum/Nut/edge/out/nna_vote" + std::to_string(i) + ".jpg";
-		  src_to_bmp(n_both_edge[i], po2);
-	  }
+        string po1 = "/Users/Quantum/Nut/edge/out/edge//nna_vote" + std::to_string(i) + ".csv";
+      //  output_arr_csv(nna_vote[i], po1);
+        n_both_edge[i] = find_edgeboth2(nna_vote[i]);
+        string po2 = "/Users/Quantum/Nut/edge/out/edge//nna_vote" + std::to_string(i) + ".jpg";
+        src_to_bmp(n_both_edge[i], po2);
+    }
+    */
 
-
-
-    return bs_mat;
+    return g_srcGray;
 
 }
 
